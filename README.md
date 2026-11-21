@@ -19,6 +19,7 @@ open Package.swift          # run the "DiskInventoryX" scheme in Xcode
 ```
 ```bash
 Scripts/make-app.sh         # or build "build/Disk Inventory X.app" from the command line
+Scripts/make-dmg.sh         # ... and pack it into "build/Disk-Inventory-X.dmg"
 ```
 ```bash
 swift test                  # 76 tests (layout, rendering, model, scanner, session logic)
