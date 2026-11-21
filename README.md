@@ -9,7 +9,7 @@ Derived from the original work by Tjark Derlien and licensed under the same term
 
 ## Requirements
 
-* macOS 14 or later, Xcode 15.4 or later (Swift 5.9)
+* macOS 14 or later; built in CI with Xcode 16 (Swift 6.1). The package declares Swift tools 5.9, but older Xcode versions have not been tried
 * the platform independent parts (`TreeMapKit`, `DiskInventoryCore`, tests, command line tool) also build on Linux
 
 ## Build and run
@@ -82,11 +82,10 @@ Two things are wrapped from AppKit because SwiftUI has no equivalent:
 
 ## Status of verification
 
-Verified on Linux (Swift 6.0.3): `TreeMapKit` and `DiskInventoryCore` compile and all 76 tests pass, including scanning
-real directories, refresh, trash and zoom flows. A folder with 91,589 files (4.9 GB) is scanned in 0.7 s,
-laid out in 44 ms and rendered at 1600×1000 in 33 ms.
+CI (`.github/workflows/macos.yml`, macOS 15, Swift 6.1) builds everything including the app, runs all 76 tests
+and assembles the app bundle; this passes with no compiler warnings. The same tests also pass on Linux (Swift 6.0.3).
+On Linux, a folder with 91,589 files (4.9 GB) is scanned in 0.7 s, laid out in 44 ms and rendered at 1600×1000 in 33 ms.
 
-**Not verified: the `DiskInventoryX` app target.** SwiftUI and AppKit do not exist on Linux, so that code has only been
-syntax checked, never compiled or run. Expect to fix some compile errors on the first build in Xcode, and to find
-layout or behaviour issues. The macOS-only branches inside `DiskInventoryCore` (resource-key based scanning, trash,
-volume checks) are likewise untested; on macOS the scanner uses Foundation's prefetched resource keys, like the original.
+**Not verified: running the app.** Nobody has launched it yet, so the UI behaviour is untested: layout of the windows,
+hover/selection in the treemap, revealing items in the file tree, context menus, trash, the volume picker and the
+menu commands. The tests cover the model, scanner, layout and rendering, not the SwiftUI/AppKit views.
