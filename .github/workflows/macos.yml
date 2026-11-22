@@ -28,7 +28,7 @@ jobs:
           for dir in /Applications /usr /System/Library; do
             for run in 1 2; do
               echo "=== $dir (run $run)"
-              .build/release/treemap-demo "$dir" 1600 1000 "$RUNNER_TEMP/bench.png" | head -2
+              DIX_SCAN_STATS=1 .build/release/treemap-demo "$dir" 1600 1000 "$RUNNER_TEMP/bench.png" 2>&1 | head -3
             done
           done
 

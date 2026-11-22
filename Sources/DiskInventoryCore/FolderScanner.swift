@@ -85,7 +85,16 @@ public final class FolderScanner {
         var cancelled = false
         var rootError: Error?
         let group = DispatchGroup()
+
+        // statistics for DIX_SCAN_STATS=1 (nanoseconds summed over all threads)
+        var readNanos: UInt64 = 0
+        var packageNanos: UInt64 = 0
+        var packageCalls = 0
+        var directories = 0
     }
+
+    @inline(__always)
+    private static func now() -> UInt64 { DispatchTime.now().uptimeNanoseconds }
 
     /// Scans `url` (a folder, or a single file) and returns the root of the resulting tree.
     public func scan(url: URL) throws -> FSItem {
@@ -114,13 +123,23 @@ public final class FolderScanner {
         root.prepareForBuild(sizeMode: sizeMode)
 
         let run = Run()
+        let scanStart = Self.now()
         enqueue(node: root, path: path, device: UInt64(st.st_dev), isRoot: true, run: run)
         run.group.wait()
+        let scanEnd = Self.now()
 
         if run.cancelled { throw ScanError.cancelled }
         if let error = run.rootError { throw ScanError.unreadable(url, underlying: error) }
 
+        let finalizeStart = Self.now()
         finalize(root)
+        if ProcessInfo.processInfo.environment["DIX_SCAN_STATS"] != nil {
+            func ms(_ n: UInt64) -> String { String(format: "%.0f ms", Double(n) / 1e6) }
+            let text = "scan statistics: walk \(ms(scanEnd - scanStart)) wall, finalize \(ms(Self.now() - finalizeStart)); "
+                + "summed over threads: reading directories \(ms(run.readNanos)) (\(run.directories) directories), "
+                + "package lookups \(ms(run.packageNanos)) (\(run.packageCalls) calls)\n"
+            FileHandle.standardError.write(Data(text.utf8))
+        }
         return root
     }
 
@@ -145,6 +164,7 @@ public final class FolderScanner {
         run.lock.unlock()
 
         let entries: [RawEntry]
+        let readStart = Self.now()
         do {
             entries = try readEntries(atPath: path, device: device)
         } catch {
@@ -153,6 +173,10 @@ public final class FolderScanner {
             run.lock.unlock()
             return
         }
+
+        let readNanos = Self.now() - readStart
+        var packageNanos: UInt64 = 0
+        var packageCalls = 0
 
         var localKinds: [String: String] = [:]
         var subfolders: [(FSItem, String, UInt64)] = []
@@ -167,7 +191,10 @@ public final class FolderScanner {
                 let ext = KindResolver.fileExtension(of: entry.name)
                 if !ext.isEmpty {
                     // only folders with an extension can be packages
+                    let t = Self.now()
                     let info = KindResolver.packageInfo(atPath: basePath + entry.name)
+                    packageNanos += Self.now() - t
+                    packageCalls += 1
                     isPackage = info.isPackage
                     kind = info.kind ?? kinds.folderKind
                 } else {
@@ -201,6 +228,10 @@ public final class FolderScanner {
 
         run.lock.lock()
         run.itemCount += entries.count
+        run.readNanos += readNanos
+        run.packageNanos += packageNanos
+        run.packageCalls += packageCalls
+        run.directories += 1
         run.lock.unlock()
 
         for (child, childPath, childDevice) in subfolders {
