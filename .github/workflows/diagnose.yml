@@ -2,7 +2,7 @@ name: Diagnose
 on: workflow_dispatch
 jobs:
   diagnose:
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - name: Look at /.nofollow
         run: |
