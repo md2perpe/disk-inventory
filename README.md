@@ -9,7 +9,7 @@ Derived from the original work by Tjark Derlien and licensed under the same term
 
 ## Requirements
 
-* macOS 14 or later; built in CI with Xcode 16 (Swift 6.1). The package declares Swift tools 5.9, but older Xcode versions have not been tried
+* a Mac with Apple Silicon (the app is built for arm64 only; Intel Macs can keep using the original app) and macOS 14 or later; built in CI with Xcode 16 (Swift 6.1). The package declares Swift tools 5.9, but older Xcode versions have not been tried
 * the platform independent parts (`TreeMapKit`, `DiskInventoryCore`, tests, command line tool) also build on Linux
 
 ## Build and run
@@ -30,6 +30,16 @@ swift run -c release treemap-demo /some/folder 1600 1000 out.png   # render a fo
 
 To see every folder (Library, other users, ...) give the app *Full Disk Access* in
 System Settings › Privacy & Security. It only reads file sizes and types, never file contents.
+
+## Releases
+
+Pushing a tag starting with `v` publishes a GitHub Release with the disk image (`.github/workflows/release.yml`):
+
+```bash
+git tag v2.0 && git push origin v2.0
+```
+
+The app is not signed or notarized, so on first launch right-click it and choose *Open*.
 
 ## Structure
 
