@@ -65,6 +65,9 @@ Two things are wrapped from AppKit because SwiftUI has no equivalent:
 
 ## What changed in behaviour
 
+* Sizes default to the space *allocated on disk* (physical size), not the nominal file size. The two differ a lot for
+  sparse files such as virtual machine images. It can be switched in the View menu or in Settings. (The original app
+  was meant to default to the nominal size, but a bug made it always show the allocated size after loading.)
 * The layout and cushion shading are a faithful port (same row algorithm, same illumination model and colors),
   with a few robustness fixes: unsorted children, zero-sized children and inconsistent parent sizes no longer trip assertions.
 * Cushions are rendered in parallel and in device pixels (sharp on Retina displays).

@@ -5,7 +5,7 @@ struct SettingsView: View {
     @AppStorage(Prefs.showPackageContents) private var showPackageContents = false
     @AppStorage(Prefs.showFreeSpace) private var showFreeSpace = false
     @AppStorage(Prefs.showOtherSpace) private var showOtherSpace = false
-    @AppStorage(Prefs.showPhysicalFileSize) private var physicalSizes = false
+    @AppStorage(Prefs.showPhysicalFileSize) private var physicalSizes = true   // same default as Prefs.registerDefaults()
     @AppStorage(Prefs.shareKindColors) private var shareColors = false
 
     @AppStorage(Prefs.splitWindowHorizontally) private var splitHorizontally = false
@@ -20,7 +20,7 @@ struct SettingsView: View {
                     Toggle("Show package contents", isOn: $showPackageContents)
                     Toggle("Show free space in the treemap", isOn: $showFreeSpace)
                     Toggle("Show other space in the treemap", isOn: $showOtherSpace)
-                    Toggle("Use physical file sizes (space allocated on disk)", isOn: $physicalSizes)
+                    Toggle("Use physical file sizes (space allocated on disk, instead of the nominal file size)", isOn: $physicalSizes)
                 }
                 Section("Colors") {
                     Toggle("Use the same colors for the same file kinds in all windows", isOn: $shareColors)

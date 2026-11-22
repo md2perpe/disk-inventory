@@ -12,6 +12,13 @@ enum Prefs {
     static let smallFontInSelectionList = "UseSmallFontInSelectionList"
     static let splitWindowHorizontally = "SplitWindowHorizontally"
     static let shareKindColors = "ShareKindColors"
+
+    /// Values used until the user changes a setting. Sizes default to the space actually allocated on disk,
+    /// which is what matters when looking for what fills a disk (sparse files, e.g. virtual machine images,
+    /// can claim hundreds of gigabytes but occupy almost nothing).
+    static func registerDefaults() {
+        UserDefaults.standard.register(defaults: [showPhysicalFileSize: true])
+    }
 }
 
 extension FolderSession.Options {

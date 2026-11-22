@@ -4,6 +4,10 @@ import DiskInventoryCore
 
 @main
 struct DiskInventoryXApp: App {
+    init() {
+        Prefs.registerDefaults()
+    }
+
     var body: some Scene {
         // One window per analysed folder. A window without a URL shows the volume picker.
         WindowGroup("Disk Inventory X", id: "folder", for: URL.self) { $url in
