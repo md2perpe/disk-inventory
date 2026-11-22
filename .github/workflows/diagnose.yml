@@ -36,6 +36,7 @@ jobs:
           }
           SWIFT
           swift "$RUNNER_TEMP/d.swift"
+      - uses: actions/checkout@v4
       - name: Scan / with the real scanner
         run: |
           swift build -c release --product treemap-demo
