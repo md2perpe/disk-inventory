@@ -21,6 +21,17 @@ jobs:
       - name: Run tests
         run: swift test
 
+      - name: Benchmark scanning
+        # prints scan / layout / render times; each folder twice (the second run has a warm file cache)
+        run: |
+          sysctl -n machdep.cpu.brand_string hw.ncpu
+          for dir in /Applications /usr /System/Library; do
+            for run in 1 2; do
+              echo "=== $dir (run $run)"
+              .build/release/treemap-demo "$dir" 1600 1000 "$RUNNER_TEMP/bench.png" | head -2
+            done
+          done
+
       - name: Build the app bundle
         run: Scripts/make-app.sh
 
