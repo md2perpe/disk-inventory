@@ -84,6 +84,19 @@ do {
 }
 let t1 = Date()
 
+// DEMO_TREE_DEPTH=2 prints the biggest items of the tree down to that depth (for debugging scans)
+if let depthText = ProcessInfo.processInfo.environment["DEMO_TREE_DEPTH"], let maxDepth = Int(depthText) {
+    func dump(_ item: FSItem, depth: Int) {
+        let flags = (item.isSymbolicLink ? " [link]" : "") + (item.isPackage ? " [package]" : "")
+        print(String(repeating: "  ", count: depth) + "\(item.name)  \(SizeFormatting.string(forBytes: item.size))  (\(item.children.count) children)\(flags)")
+        guard depth < maxDepth else { return }
+        // the biggest items, plus hidden items such as ".nofollow" whatever their size
+        let shown = item.children.prefix(8) + item.children.dropFirst(8).filter { $0.name.hasPrefix(".") && $0.isDirectory }
+        for child in shown { dump(child, depth: depth + 1) }
+    }
+    dump(root, depth: 0)
+}
+
 let colors = FileTypeColors()
 let stats = FileKindStatistics.collect(from: root, isNode: { $0.isFolder })
 colors.reserveColors(for: stats)

@@ -36,3 +36,7 @@ jobs:
           }
           SWIFT
           swift "$RUNNER_TEMP/d.swift"
+      - name: Scan / with the real scanner
+        run: |
+          swift build -c release --product treemap-demo
+          DEMO_TREE_DEPTH=2 .build/release/treemap-demo / 800 600 "$RUNNER_TEMP/root.png"
