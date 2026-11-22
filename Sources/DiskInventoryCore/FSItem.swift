@@ -196,6 +196,11 @@ public final class FSItem: Identifiable, Hashable {
         sortChildren()
     }
 
+    /// Sets the size mode of a root before children are added (children inherit it, so they're sorted right away).
+    func prepareForBuild(sizeMode: SizeMode) {
+        self.sizeMode = sizeMode
+    }
+
     /// Changes the size used for sorting and display for the whole subtree.
     public func applySizeMode(_ mode: SizeMode) {
         sizeMode = mode
