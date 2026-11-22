@@ -192,7 +192,7 @@ public final class FolderScanner {
                 if !ext.isEmpty {
                     // only folders with an extension can be packages
                     let t = Self.now()
-                    let info = KindResolver.packageInfo(atPath: basePath + entry.name)
+                    let info = kinds.packageInfo(forDirectoryExtension: ext, atPath: basePath + entry.name)
                     packageNanos += Self.now() - t
                     packageCalls += 1
                     isPackage = info.isPackage

@@ -68,6 +68,21 @@ final class KindResolver: @unchecked Sendable {
 
     #endif
 
+    private var packageInfoByExtension: [String: (isPackage: Bool, kind: String?)] = [:]
+
+    /// Whether a directory with the given extension is a package (e.g. an application) and its kind.
+    ///
+    /// Asking the system is slow (about 0.2 ms), but the answer only depends on the extension, so it is
+    /// asked once for each extension, using the first directory found.
+    func packageInfo(forDirectoryExtension ext: String, atPath path: String) -> (isPackage: Bool, kind: String?) {
+        lock.lock()
+        defer { lock.unlock() }
+        if let cached = packageInfoByExtension[ext] { return cached }
+        let info = Self.packageInfo(atPath: path)
+        packageInfoByExtension[ext] = info
+        return info
+    }
+
     /// Whether a directory is a package (e.g. an application) and its kind. Only meaningful on macOS.
     static func packageInfo(atPath path: String) -> (isPackage: Bool, kind: String?) {
         #if canImport(UniformTypeIdentifiers)

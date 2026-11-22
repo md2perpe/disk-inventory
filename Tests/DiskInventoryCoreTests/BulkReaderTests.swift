@@ -109,6 +109,34 @@ final class BulkReaderTests: XCTestCase {
         }
     }
 
+    /// The scanner asks the system once per extension whether a folder is a package; that must give the
+    /// same answer as asking for every single folder.
+    func testPackageDetectionPerExtensionMatchesFoundation() throws {
+        let resolver = KindResolver()
+        var queue = ["/Applications", "/System/Library/Frameworks", "/System/Library/CoreServices", "/Library"]
+        var checked = 0
+        var mismatches: [String] = []
+        var packages = 0
+        while let dir = queue.popLast(), checked < 20_000 {
+            guard let entries = try? BulkDirectoryReader().readEntries(atPath: dir, parentDevice: 0) else { continue }
+            for e in entries where e.kind == .directory && !e.isMountPoint {
+                let path = dir + "/" + e.name
+                queue.append(path)
+                let ext = KindResolver.fileExtension(of: e.name)
+                guard !ext.isEmpty else { continue }
+                checked += 1
+                let direct = KindResolver.packageInfo(atPath: path)
+                let cached = resolver.packageInfo(forDirectoryExtension: ext, atPath: path)
+                if direct.isPackage { packages += 1 }
+                if direct.isPackage != cached.isPackage { mismatches.append("\(path): direct \(direct.isPackage), by extension \(cached.isPackage)") }
+            }
+        }
+        print("checked \(checked) folders with an extension, \(packages) are packages, \(mismatches.count) mismatches")
+        for m in mismatches.prefix(15) { print("  MISMATCH", m) }
+        XCTAssertGreaterThan(packages, 10)
+        XCTAssertTrue(mismatches.isEmpty)
+    }
+
     func testScannerKindsMatchFoundationForCommonFiles() throws {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("dix-kinds-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
