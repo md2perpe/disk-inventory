@@ -42,6 +42,21 @@ public final class FolderScanner {
     public var onProgress: ((Progress) -> Void)?
     public var isCancelled: () -> Bool
 
+    /// Special directories in the root of a volume. They are not real folders but ways to address files by other
+    /// means (`/.nofollow`, `/.resolve`, `/.vol`). Depending on the macOS version listing them yields nothing
+    /// or - on macOS 26 - a second copy of the whole volume, so their contents are never scanned.
+    static let pseudoDirectoryNames: Set<String> = [".nofollow", ".resolve", ".vol"]
+
+    /// Tells whether a folder is the root of a volume (replaceable for testing).
+    var isVolumeRoot: (URL) -> Bool = { url in
+        if url.path == "/" { return true }
+        #if canImport(Darwin)
+        return (try? url.resourceValues(forKeys: [.isVolumeKey]).isVolume) ?? false
+        #else
+        return false
+        #endif
+    }
+
     private var itemCount = 0
     private var unreadable = 0
     private var kindCache: [String: String] = [:]
@@ -100,8 +115,16 @@ public final class FolderScanner {
             return
         }
 
+        var parentIsVolumeRoot: Bool?   // determined when needed
+
         for childURL in urls {
             let info = entryInfo(for: childURL, parentDevice: device)
+
+            var isPseudoDirectory = false
+            if info.isDirectory && FolderScanner.pseudoDirectoryNames.contains(childURL.lastPathComponent) {
+                if parentIsVolumeRoot == nil { parentIsVolumeRoot = isVolumeRoot(url) }
+                isPseudoDirectory = parentIsVolumeRoot == true
+            }
 
             let child = FSItem(
                 name: childURL.lastPathComponent,
@@ -115,7 +138,7 @@ public final class FolderScanner {
             itemCount += 1
 
             // don't descend into other volumes mounted inside the folder
-            if info.isDirectory && !info.isVolumeRoot {
+            if info.isDirectory && !info.isVolumeRoot && !isPseudoDirectory {
                 try scanChildren(of: child, at: childURL, device: info.device)
             }
         }

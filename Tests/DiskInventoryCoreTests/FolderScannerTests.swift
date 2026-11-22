@@ -120,4 +120,28 @@ final class FolderScannerTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(root.size, 10)
         XCTAssertNotNil(root.children.first { $0.name == "locked" })
     }
+
+    func testPseudoDirectoriesInAVolumeRootAreNotScanned() throws {
+        // on macOS 26 "/.nofollow" lists a second copy of the volume; simulate such an alias with real files
+        try write("Users/a.txt", bytes: 1000)
+        try write(".nofollow/Users/a.txt", bytes: 1000)
+        try write(".vol/b.txt", bytes: 500)
+
+        let scanner = FolderScanner()
+        scanner.isVolumeRoot = { _ in true }
+        let root = try scanner.scan(url: dir)
+
+        XCTAssertEqual(root.size, 1000, "contents of the pseudo directories must not be counted")
+        let nofollow = try XCTUnwrap(root.children.first { $0.name == ".nofollow" })
+        XCTAssertTrue(nofollow.children.isEmpty)
+        XCTAssertEqual(nofollow.size, 0)
+        XCTAssertTrue(try XCTUnwrap(root.children.first { $0.name == ".vol" }).children.isEmpty)
+    }
+
+    func testPseudoDirectoryNamesAreNormalFoldersElsewhere() throws {
+        // only in the root of a volume; a folder with such a name anywhere else is scanned normally
+        try write("project/.vol/b.txt", bytes: 500)
+        let root = try FolderScanner().scan(url: dir)      // (a temporary folder is not a volume root)
+        XCTAssertEqual(root.size, 500)
+    }
 }
