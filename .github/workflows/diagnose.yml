@@ -1,0 +1,38 @@
+name: Diagnose
+on: workflow_dispatch
+jobs:
+  diagnose:
+    runs-on: macos-15
+    steps:
+      - name: Look at /.nofollow
+        run: |
+          sw_vers -productVersion
+          echo "--- ls -lad"; ls -lad /.nofollow /.vol /.resolve 2>&1
+          echo "--- ls -la /.nofollow"; ls -la /.nofollow 2>&1 | head
+          echo "--- ls -la /"; ls -la / | head -40
+          echo "--- stat (dev inode mode)"; stat -f '%N dev=%d ino=%i %Sp' /.nofollow / /Users /Applications /System/Volumes/Data /.nofollow/Users 2>&1
+          echo "--- firmlinks"; cat /usr/share/firmlinks 2>&1 | head -20
+          echo "--- mount"; mount | head
+      - name: Look at it through Foundation
+        run: |
+          cat > "$RUNNER_TEMP/d.swift" <<'SWIFT'
+          import Foundation
+          let fm = FileManager.default
+          for p in ["/.nofollow", "/.nofollow/Users", "/Users", "/"] {
+              print("== \(p)")
+              print("  exists:", fm.fileExists(atPath: p))
+              let url = URL(fileURLWithPath: p)
+              if let v = try? url.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey, .isVolumeKey, .isHiddenKey]) {
+                  print("  isDirectory:", v.isDirectory as Any, "isSymlink:", v.isSymbolicLink as Any, "isVolume:", v.isVolume as Any, "isHidden:", v.isHidden as Any)
+              }
+              let atPath = try? fm.contentsOfDirectory(atPath: p)
+              print("  contentsOfDirectory(atPath:)", atPath.map { "\($0.count) entries: \($0.prefix(12))" } ?? "error")
+              let atURL = try? fm.contentsOfDirectory(at: url, includingPropertiesForKeys: [.isDirectoryKey], options: [])
+              print("  contentsOfDirectory(at:)    ", atURL.map { "\($0.count) entries: \($0.prefix(12).map { $0.lastPathComponent })" } ?? "error")
+              var n = 0
+              var buf = [Int8](repeating: 0, count: 1024)
+              if let d = opendir(p) { while let e = readdir(d) { n += 1; _ = e }; closedir(d) }
+              print("  readdir() entries (incl . and ..):", n)
+          }
+          SWIFT
+          swift "$RUNNER_TEMP/d.swift"
